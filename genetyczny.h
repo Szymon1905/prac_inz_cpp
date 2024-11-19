@@ -21,5 +21,7 @@ void generate_starting_population();
 
 int calculate_path_length(const vector<int> &solution, vector<vector<int>> matrix);
 
+void genetic_with_timer(int liczba_op);
+
 
 

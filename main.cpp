@@ -127,6 +127,7 @@ int main() {
         }
         cout << "5 - crossover factor[" << crossover_factor << "]" << endl;
         cout << "6 - Start the genetic algorithm" << endl;
+        cout << "8 - Start the genetic algorithm with operations" << endl;
         cout << "7 - Roulette method[";
         if(roulette_ver == 0){
             cout << "Custom (Recommended)]"<< endl;
@@ -191,6 +192,11 @@ int main() {
                 cin >> roulette_ver;
                 break;
             case 8:
+                cout<<"Start of algorithm + licznik"<<endl;
+                cout<<"Podaj liczbę operacji: "<<endl;
+                int liczba_op;
+                cin>>liczba_op;
+                genetic_with_timer(liczba_op);
                 return 0;
             case 10:
                 return 0;

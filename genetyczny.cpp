@@ -60,7 +60,7 @@ void timer(int seconds) {
 
 
     while (chrono::high_resolution_clock::now() < end) {
-        this_thread::sleep_for(chrono::milliseconds(10));
+        //this_thread::sleep_for(chrono::milliseconds(10));
     }
 
     cout << "\rRemaining time: "
@@ -373,4 +373,61 @@ void genetic(int duration) {
     print_best();   // etap 7
 
     cout<<"Liczba operacji: "<<liczba_operacji<<endl;
+}
+
+
+void genetic_with_timer(int liczba_op) {
+    vector<int> a;
+    liczba_operacji = liczba_op;
+
+    // generacja populacji startowej
+    generate_starting_population(); // etap 1
+
+
+    //reset najlepszego osobnika
+    best_solution.reset();
+
+    // obliczanie czasu dla wątku który odpowiada za warunek stopu
+    start = chrono::high_resolution_clock::now();
+    //auto stop = start + chrono::seconds(duration);
+
+    // start wątku odliczajacego duration do zatrzymania alogrytmu ( warunek stopu )
+    //thread thread_timer(timer, duration);
+
+    // ocena populacji startowej
+    evaluate_population();                // etap 2 tylko raz na początku
+
+    while (liczba_operacji > 0) {  // etap 3
+
+        evaluate_population();       // etap 2 każdy kolejny
+
+        if (roulette_ver == 0){
+            population = custom_parent_choosing_method();
+        } else{
+            population = choosing_parent_book_method();
+        }
+
+
+        crossover();
+
+
+        evaluate_population(); // todo delete
+
+        mutation();
+
+        liczba_operacji--;
+
+    }
+    auto stop = chrono::high_resolution_clock::now();
+
+
+    //thread_timer.join();
+
+    auto time = chrono::duration_cast<chrono::milliseconds>(stop - start).count();
+
+    // wypisanie najlepszego
+    print_best();   // etap 7
+
+    cout<<"Zadana liczba operacji ukończona "<<endl;
+    cout<<"Czas w milisekundach: "<< time<<endl;
 }
