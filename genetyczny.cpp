@@ -15,10 +15,13 @@ extern float mutation_rate;
 extern vector<vector<int>> global_matrix;
 extern float mutation_method;
 extern int roulette_ver;
+extern int liczba_operacji;
 
 // random number generator
 random_device rd;
-mt19937 gen(rd());
+//mt19937 gen(rd());
+uint32_t seed = 12345;
+mt19937 gen(seed);
 
 auto start= chrono::high_resolution_clock::now();;
 
@@ -26,6 +29,16 @@ vector<Solution> population;
 
 Solution best_solution = Solution(vector<int>(), INT32_MAX);
 
+void fisher_yates_shuffle(vector<int>& vec, mt19937& gen) {
+    int len = vec.size();
+    for (int i = len - 1; i > 0; i--) {
+        //cout<<"przed range i = "<<i<<endl;
+        uniform_int_distribution<int> dist(0, i);
+        int j = dist(gen);
+        //cout<<"po range j = "<<j<<endl;
+        swap(vec[i], vec[j]);
+    }
+}
 
 void print_best() {
     cout << endl;
@@ -71,7 +84,8 @@ void generate_starting_population() {
 
     // generating random permutations of cities by the shuffle method and inserting them into the starting population
     for (int i = 0; i < starting_population_size; i++) {
-        shuffle(cities.begin(), cities.end(), gen);
+        //shuffle(cities.begin(), cities.end(), gen);
+        fisher_yates_shuffle(cities,gen);
         Solution solution = Solution(cities, INT32_MAX);
         population.push_back(solution);
     }
@@ -160,25 +174,25 @@ vector<Solution> custom_parent_choosing_method() {
 
 vector<Solution> choosing_parent_book_method(){
     // Calculate the sum of the values of the objective function (i.e., path) for all individuals
-    long double path_sum = 0.0;
+    float path_sum = 0.0;
     for (const Solution &solution : population) {
-        path_sum += 1.0 / (long double)solution.path_length;
+        path_sum += 1.0f / (float)solution.path_length;
     }
 
     // Initialization of an empty list of selected parents
     vector<Solution> chosen_ones;
 
-    uniform_real_distribution<long double> distribution(0.0, path_sum);
+    uniform_real_distribution<float> distribution(0.0, path_sum);
 
     // Choosing parents
-    long double los;
-    long double sum;
+    float los;
+    float sum;
     for (int i = 0; i < int(population.size()) / 2; i++) {
         sum = 0;
         los = distribution(gen);
 
         for (const Solution &solution : population) {
-            sum += 1.0 / (long double)solution.path_length;
+            sum += 1.0f / (float)solution.path_length;
             if (sum >= los) {
                 chosen_ones.push_back(solution);
                 break;
@@ -203,7 +217,7 @@ Solution OX_crossover(Solution parent1, Solution parent2) {
     Solution successor;
     int path_length = int(population[0].cities.size());
 
-    std::uniform_int_distribution<> distribution(0, path_length - 2);
+    uniform_int_distribution<> distribution(0, path_length - 2);
     int point1 = distribution(gen);
     int point2 = distribution(gen);
 
@@ -260,7 +274,6 @@ Solution OX_crossover(Solution parent1, Solution parent2) {
     for (int i = 0; i < point1; i++) {
 
         if (successor.cities[i] == -1) {
-
             // jeśli pole jest puste (-1) oraz miasto się nie powtarza, wpsiujemy miasto
             successor.cities[i] = available_cities.front();
             available_cities.erase(available_cities.begin());
@@ -312,6 +325,7 @@ void crossover() {
 
 void genetic(int duration) {
     vector<int> a;
+    liczba_operacji = 0;
 
     // generacja populacji startowej
     generate_starting_population(); // etap 1
@@ -343,7 +357,12 @@ void genetic(int duration) {
 
         crossover();
 
+
+        evaluate_population(); // todo delete
+
         mutation();
+
+        liczba_operacji++;
 
     }
 
@@ -353,5 +372,5 @@ void genetic(int duration) {
     // wypisanie najlepszego
     print_best();   // etap 7
 
-
+    cout<<"Liczba operacji: "<<liczba_operacji<<endl;
 }
