@@ -18,6 +18,7 @@ extern int mutation_method;
 extern vector<Solution> population;
 extern mt19937 gen;
 
+// Metoda implementująca mutację poprzez inwersję
 void invert(Solution &osobnik) {
 
     // Wybieram losowy fragment drogi
@@ -35,6 +36,7 @@ void invert(Solution &osobnik) {
 
 }
 
+// Metoda przygotowująca parametry (wspołczynnik mutacji) do mutacji poprzez inwersję
 void invertion_method() {
     auto population_size = population.size();
     int mutation_count = static_cast<int>(mutation_rate * population_size);
@@ -46,6 +48,7 @@ void invertion_method() {
     }
 }
 
+// Metoda mutacji poprzez zamianę (swap)
 void swapping_method() {
     uniform_int_distribution<int> distribution(0, population.size() - 1);
     int point1 = distribution(gen);
@@ -53,6 +56,7 @@ void swapping_method() {
     swap(population[point1], population[point2]);
 }
 
+//Metoda wyboru metody mutacji
 void mutation() {
     if (mutation_method == 0) {
         invertion_method();

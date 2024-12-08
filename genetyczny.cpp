@@ -14,14 +14,11 @@ extern float crossover_factor;
 extern float mutation_rate;
 extern vector<vector<int>> global_matrix;
 extern float mutation_method;
-extern int roulette_ver;
 extern int liczba_operacji;
 
-// random number generator
-random_device rd;
-//mt19937 gen(rd());
-uint32_t seed = 12345;
-mt19937 gen(seed);
+
+uint32_t seed = 1; // ziarno generatora liczb losowych
+mt19937 gen(seed); // inicjalizacja generatora liczb losowych
 
 auto start= chrono::high_resolution_clock::now();;
 
@@ -32,10 +29,8 @@ Solution best_solution = Solution(vector<int>(), INT32_MAX);
 void fisher_yates_shuffle(vector<int>& vec, mt19937& gen) {
     int len = vec.size();
     for (int i = len - 1; i > 0; i--) {
-        //cout<<"przed range i = "<<i<<endl;
         uniform_int_distribution<int> dist(0, i);
         int j = dist(gen);
-        //cout<<"po range j = "<<j<<endl;
         swap(vec[i], vec[j]);
     }
 }
@@ -43,55 +38,38 @@ void fisher_yates_shuffle(vector<int>& vec, mt19937& gen) {
 void print_best() {
     cout << endl;
     cout << endl;
-    cout << "Best Solution: ";
+    cout << "Najlepsze rozwiązanie: ";
     for (int elem: best_solution.cities) {
         cout << elem << " ";
     }
     cout << best_solution.cities.front() << endl;
     cout << endl;
-    cout << "Cost of solution: " << best_solution.path_length;
+    cout << "Koszt rozwiązania: " << best_solution.path_length;
     cout << endl;
     cout << endl;
 }
 
-void timer(int seconds) {
-    auto start = chrono::high_resolution_clock::now();
-    auto end = start + chrono::seconds(seconds);
-
-
-    while (chrono::high_resolution_clock::now() < end) {
-        //this_thread::sleep_for(chrono::milliseconds(10));
-    }
-
-    cout << "\rRemaining time: "
-            << chrono::duration_cast<chrono::seconds>(end - chrono::high_resolution_clock::now()).count()
-            << " seconds";
-    cout.clear();
-
-    cout << "Out of time" << endl;
-}
 
 void generate_starting_population() {
 
-    // generate cities / cities
+    // Generowanie miast do vectora
     vector<int> cities;
     for (int i = 0; i < global_city_count; i++) {
         cities.push_back(i);
     }
 
-    // clear population on restart
+    // reset populacji po restarcie algorytmu
     population.clear();
 
-    // generating random permutations of cities by the shuffle method and inserting them into the starting population
+    // generowanie losowych permutacji miast metodą fisher yates shuffle i wstawianie ich do populacji początkowej
     for (int i = 0; i < starting_population_size; i++) {
-        //shuffle(cities.begin(), cities.end(), gen);
         fisher_yates_shuffle(cities,gen);
         Solution solution = Solution(cities, INT32_MAX);
         population.push_back(solution);
     }
 
     for (Solution &solution: population) {
-        solution.path_length = calculate_path_length(cities, global_matrix);
+        solution.path_length = calculate_path_length(cities, global_matrix); // obliczanie długości dróg każdego osobnika w populacji
     }
 
 }
@@ -102,89 +80,45 @@ int calculate_path_length(const vector<int> &solution, vector<vector<int>> matri
         sum_path += matrix[solution[i]][solution[i + 1]];
     }
 
-    // add missing path to starting city
+    // dodanie drogi powrotnej do ostatniego miasta
     sum_path += matrix[solution.back()][solution.front()];
     return sum_path;
 }
 
+
+// Metoda oceniajaca całą populację
 void evaluate_population() {
 
     for (Solution &solution: population) {
 
-
-        // calcaltion of path length
+        // Obliczanie długości ścieżki
         solution.path_length = calculate_path_length(solution.cities, global_matrix);
 
-        // compare with current best solution
+        // porównanie z aktualnym najlepszym rozwiązaniem
         if (solution.path_length < best_solution.path_length) {
 
-            // update best solution for survivability of the best
+            // aktualizacja najlepszego rozwiązania dla przeżywalności najlepszego osobnika
             best_solution = solution;
 
-            /*
-             for (int a: best_solution.cities) {
-                cout << a << " ";
-            }
-             */
-            //auto t = chrono::high_resolution_clock::now();
-            //auto minelo_czasu = chrono::duration_cast<chrono::milliseconds>(t - start).count();
-            //cout << "Nowe najlepsze rozwiazanie znalezione po " << minelo_czasu << " milisekundach." << endl;
-            // cout << best_solution.cities[0] << endl;
-            cout << "New best: " << solution.path_length << endl;
+            cout << "Nowy najlepszy: " << solution.path_length << endl;
         }
     }
 }
 
-vector<Solution> custom_parent_choosing_method() {
-    // Calculate the sum of the values of the objective function (i.e., path length) for all solutions
-    int path_sum = 0;
-    for (const Solution &solution : population) {
-        path_sum += solution.path_length;
-    }
-
-    // Initialization of an empty list of selected parents
-    vector<Solution> chosen_ones;
-
-    // Checking that the population is not empty
-    if (population.empty()) {
-        return chosen_ones;
-    }
-
-    sort(population.begin(), population.end(), [](const Solution &a, const Solution &b) {
-        return a.path_length < b.path_length;
-    });
-
-    // Chooosing parents
-    for (int i = 0; i < int(population.size()) / 2; i++) {
-        int sum = 0;
-        int los = rand() % path_sum;
-
-        for (const Solution &solution : population) {
-            sum += solution.path_length;
-            if (sum >= los) {
-                chosen_ones.push_back(solution);
-                break;
-            }
-        }
-    }
-
-    return chosen_ones;
-}
-
-
+// Metoda implementująca ruletkę, wybierjąca osobniki do krzyżówania
 vector<Solution> choosing_parent_book_method(){
-    // Calculate the sum of the values of the objective function (i.e., path) for all individuals
+    // Obliczamy sumę wartości funkcji celu (tj. ścieżki) dla wszystkich osobników.
     float path_sum = 0.0;
     for (const Solution &solution : population) {
         path_sum += 1.0f / (float)solution.path_length;
     }
 
-    // Initialization of an empty list of selected parents
+    // Inicjalizacja pustego vectora na wybranych rodziców
     vector<Solution> chosen_ones;
 
     uniform_real_distribution<float> distribution(0.0, path_sum);
 
-    // Choosing parents
+    // Wybieramy rodziców
     float los;
     float sum;
     for (int i = 0; i < int(population.size()) / 2; i++) {
@@ -203,7 +137,7 @@ vector<Solution> choosing_parent_book_method(){
     return chosen_ones;
 }
 
-
+// funkcja sprawdzająca czy dane miasto jest w vectorze
 bool check_if_contains(vector<int> vector, int liczba) {
     for (int pole: vector) {
         if (pole == liczba) {
@@ -213,6 +147,7 @@ bool check_if_contains(vector<int> vector, int liczba) {
     return false;
 }
 
+// Metoda implementująca krzyżównaie OX 2 rodziców w celu stworzenia potomka
 Solution OX_crossover(Solution parent1, Solution parent2) {
     Solution successor;
     int path_length = int(population[0].cities.size());
@@ -221,7 +156,7 @@ Solution OX_crossover(Solution parent1, Solution parent2) {
     int point1 = distribution(gen);
     int point2 = distribution(gen);
 
-
+    // zamiana punktów jeśli trzeba
     if (point1 > point2) {
         swap(point1, point2);
     }
@@ -231,7 +166,7 @@ Solution OX_crossover(Solution parent1, Solution parent2) {
         successor.cities.push_back(-1);
     }
 
-    // wstawienie miast do potomka od rodzica pomiędzy punktami cięcia,  takie zielone na slajdzie 17
+    // wstawienie miast do potomka od rodzica pomiędzy punktami cięcia
     for (int i = point1; i <= point2; i++) {
         successor.cities[i] = parent1.cities[i];
     }
@@ -283,7 +218,7 @@ Solution OX_crossover(Solution parent1, Solution parent2) {
     return successor;
 }
 
-
+// Funkcja implmentująca krzyżówanie, zwracająca nową populację
 void crossover() {
     Solution succesor1, succesor2;
 
@@ -292,6 +227,7 @@ void crossover() {
 
     vector<Solution> new_ones;
 
+    // Generacja pierwszego potomka
     for (Solution solution: population) {
         float chance = crossover_chance(gen);
 
@@ -306,6 +242,7 @@ void crossover() {
 
     }
 
+    // Generacja drugiego potomka
     for (Solution solution: population) {
         float szansa = crossover_chance(gen);
 
@@ -323,42 +260,32 @@ void crossover() {
     population = new_ones;
 }
 
+// Główna funkcja alogrytmu genetycznego używająca określonego czasu jako warunku stopu
 void genetic(int duration) {
     vector<int> a;
     liczba_operacji = 0;
 
     // generacja populacji startowej
-    generate_starting_population(); // etap 1
-
+    generate_starting_population();
 
     //reset najlepszego osobnika
     best_solution.reset();
 
-    // obliczanie czasu dla wątku który odpowiada za warunek stopu
+    // start pomiaru czasu
     start = chrono::high_resolution_clock::now();
     auto stop = start + chrono::seconds(duration);
 
-    // start wątku odliczajacego duration do zatrzymania alogrytmu ( warunek stopu )
-    thread thread_timer(timer, duration);
-
     // ocena populacji startowej
-    evaluate_population();                // etap 2 tylko raz na początku
+    evaluate_population();
+
 
     while (chrono::high_resolution_clock::now() < stop) {  // etap 3
 
-        evaluate_population();       // etap 2 każdy kolejny
+        evaluate_population();
 
-        if (roulette_ver == 0){
-            population = custom_parent_choosing_method();
-        } else{
-            population = choosing_parent_book_method();
-        }
-
+        population = choosing_parent_book_method();
 
         crossover();
-
-
-        evaluate_population(); // todo delete
 
         mutation();
 
@@ -366,67 +293,48 @@ void genetic(int duration) {
 
     }
 
-
-    thread_timer.join();
-
     // wypisanie najlepszego
-    print_best();   // etap 7
+    print_best();
 
     cout<<"Liczba operacji: "<<liczba_operacji<<endl;
 }
 
-
+// Główna funkcja alogrytmu genetycznego używająca określonej liczby pokoleń jako warunku stopu uzyta do testów wydajności
 void genetic_with_timer(int liczba_op) {
     vector<int> a;
     liczba_operacji = liczba_op;
 
     // generacja populacji startowej
-    generate_starting_population(); // etap 1
-
+    generate_starting_population();
 
     //reset najlepszego osobnika
     best_solution.reset();
 
-    // obliczanie czasu dla wątku który odpowiada za warunek stopu
+    // start pomiaru czasu
     start = chrono::high_resolution_clock::now();
-    //auto stop = start + chrono::seconds(duration);
-
-    // start wątku odliczajacego duration do zatrzymania alogrytmu ( warunek stopu )
-    //thread thread_timer(timer, duration);
 
     // ocena populacji startowej
-    evaluate_population();                // etap 2 tylko raz na początku
+    evaluate_population();
 
-    while (liczba_operacji > 0) {  // etap 3
+    while (liczba_operacji > 0) {
 
-        evaluate_population();       // etap 2 każdy kolejny
+        evaluate_population();
 
-        if (roulette_ver == 0){
-            population = custom_parent_choosing_method();
-        } else{
-            population = choosing_parent_book_method();
-        }
-
+        population = choosing_parent_book_method();
 
         crossover();
-
-
-        evaluate_population(); // todo delete
 
         mutation();
 
         liczba_operacji--;
 
     }
-    auto stop = chrono::high_resolution_clock::now();
+    auto stop = chrono::high_resolution_clock::now(); // koniec pomiaru czasu
 
+    auto time = chrono::duration_cast<chrono::milliseconds>(stop - start).count(); // zliczenie czasu wykonania
 
-    //thread_timer.join();
-
-    auto time = chrono::duration_cast<chrono::milliseconds>(stop - start).count();
-
-    // wypisanie najlepszego
-    print_best();   // etap 7
+    // wypisanie najlepszego osobnika / rozwiązania
+    print_best();
 
     cout<<"Zadana liczba operacji ukończona "<<endl;
     cout<<"Czas w milisekundach: "<< time<<endl;
