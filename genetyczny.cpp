@@ -218,7 +218,7 @@ Solution OX_crossover(Solution parent1, Solution parent2) {
     return successor;
 }
 
-// Funkcja implmentująca krzyżówanie, zwracająca nową populację
+// Funkcja przygotowująca krzyżówanie, zwracająca nową populację
 void crossover() {
     Solution succesor1, succesor2;
 
